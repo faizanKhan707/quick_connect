@@ -68,16 +68,10 @@
         />
 
 
-    <ScrollView
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rcv_peers"
         android:layout_width="match_parent"
-        android:layout_height="200dp"
-
-        >
-        <ListView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-        />
-    </ScrollView>
+        android:layout_height="250dp" />
 
     <TextView
         android:layout_width="match_parent"
@@ -89,16 +83,11 @@
         android:textStyle="bold"
         android:background="#DCD6D6"
         />
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="300dp"
 
-        >
-        <ListView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            />
-    </ScrollView>
+    <androidx.recyclerview.widget.RecyclerView
+        android:layout_width="match_parent"
+        android:id="@+id/rcv_msg"
+        android:layout_height="250dp" />
 
     <LinearLayout
         android:layout_width="match_parent"
