@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_margin="6dp"
+    android:layout_height="wrap_content">
+    <ImageView
+        android:layout_width="0dp"
+        android:layout_weight=".05"
+        android:layout_marginRight="6dp"
+        android:layout_marginTop="3dp"
+        android:background="#5569DC"
+        android:layout_height="16dp"
+        android:id="@+id/msg_image"
+        />
+    <TextView
+        android:id="@+id/peer_message"
+        android:layout_weight=".95"
+        android:layout_width="0dp"
+        android:textSize="16dp"
+        android:textStyle="bold"
+        android:layout_height="wrap_content"
+        />
+</LinearLayout>
