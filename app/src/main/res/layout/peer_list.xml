@@ -14,6 +14,7 @@
         android:layout_height="16dp"
         />
     <TextView
+        android:background="@drawable/border"
         android:id="@+id/peer_name"
         android:layout_weight=".95"
         android:layout_width="0dp"

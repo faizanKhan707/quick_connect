@@ -1,5 +1,6 @@
 package com.example.quickconnect.adapter
 
+import android.net.wifi.p2p.WifiP2pDevice
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
