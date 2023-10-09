@@ -108,17 +108,15 @@
         >
         <EditText
             android:layout_weight=".9"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            />
-        <Button
-            android:layout_weight=".025"
+            android:id="@+id/msg_text"
+            android:hint="Message"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             />
         <Button
             android:layout_weight=".075"
             android:text="SEND"
+            android:id="@+id/send"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             />
