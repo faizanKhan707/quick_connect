@@ -5,6 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:background="@drawable/bgi"
     tools:context=".MainActivity">
 
 
@@ -15,18 +16,20 @@
         android:layout_height="0dp"
         android:layout_weight=".03"
         android:orientation="horizontal">
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_weight="1"
             android:textSize="16dp"
             android:gravity="center"
+            android:textColor="@color/white"
             android:text="Connnection Status" />
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/discover_status"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_weight="1"
+            android:textColor="@color/white"
             android:textSize="16dp"
             android:gravity="center"
             android:background="#E15B5B"
@@ -45,6 +48,7 @@
             android:id="@+id/wifi_button"
             android:layout_weight=".5"
             android:text="WIFI OFF"
+            android:textColor="@color/white"
             android:background="#E15B5B"
             android:layout_margin="5dp"
             android:layout_width="wrap_content"
@@ -57,21 +61,25 @@
             android:id="@+id/discover_peer"
             android:layout_margin="5dp"
             android:layout_weight=".5"
-            android:background="#5BA2E1"
+            android:textColor="@color/white"
+            android:backgroundTint="#651445"
+
             android:text="Discover" />
     </LinearLayout>
 
 
-    <TextView
+    <com.google.android.material.textview.MaterialTextView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight=".03"
+
         android:text="Peers List"
         android:textSize="16dp"
         android:layout_margin="5dp"
         android:gravity="center"
         android:textStyle="bold"
-        android:background="#DCD6D6"
+        android:textColor="@color/white"
+        android:background="#651445"
         />
 
 
@@ -81,7 +89,8 @@
         android:layout_height="0dp"
         android:layout_weight=".2"/>
 
-    <TextView
+
+        <com.google.android.material.textview.MaterialTextView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight=".03"
@@ -90,7 +99,8 @@
         android:layout_margin="5dp"
         android:gravity="center"
         android:textStyle="bold"
-        android:background="#DCD6D6"
+        android:textColor="@color/white"
+        android:background="#651445"
         />
 
     <androidx.recyclerview.widget.RecyclerView
@@ -106,17 +116,21 @@
         android:layout_weight=".04"
         android:orientation="horizontal"
         >
-        <EditText
+        <com.google.android.material.textfield.TextInputEditText
             android:layout_weight=".9"
             android:id="@+id/msg_text"
             android:hint="Message"
+            android:textColor="@color/white"
+            android:textColorHint="@color/white"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             />
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:layout_weight=".075"
             android:text="SEND"
             android:id="@+id/send"
+            android:textColor="@color/white"
+            android:backgroundTint="#651445"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             />

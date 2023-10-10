@@ -14,12 +14,13 @@
         android:layout_height="16dp"
         />
     <TextView
-        android:background="@drawable/border"
+        android:padding="2dp"
         android:id="@+id/peer_name"
         android:layout_weight=".95"
         android:layout_width="0dp"
         android:textSize="16dp"
         android:textStyle="bold"
+        android:textColor="@color/white"
         android:layout_height="wrap_content"
         />
 </LinearLayout>

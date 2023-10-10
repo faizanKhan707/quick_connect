@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Quick Connect</string>
+    <string name="wifi_on">WIFI ON</string>
+    <string name="discovey_started">Discovey Started</string>
+    <string name="not_connected">Not Connected</string>
+    <string name="host">Host</string>
+    <string name="client">Client</string>
 </resources>
