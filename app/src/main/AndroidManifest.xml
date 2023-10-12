@@ -25,6 +25,13 @@
         android:required="true"
         android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" />
+    <uses-permission
+        android:required="true"
+        android:name="android.permission.READ_MEDIA_IMAGES"/>
+
+    <uses-permission
+        android:required="true"
+        android:name="android.permission.med"/>
 
     <application
         android:allowBackup="true"

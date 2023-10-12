@@ -10,6 +10,7 @@ import android.net.NetworkCapabilities
 import android.net.NetworkInfo
 import android.net.wifi.p2p.WifiP2pManager
 import android.os.Build
+import android.provider.Settings.Global.getString
 import android.widget.Button
 import android.widget.Toast
 import androidx.core.content.ContextCompat.getSystemService
@@ -49,6 +50,8 @@ class my_broadcast(var manager: WifiP2pManager, var channel:WifiP2pManager.Chann
                     else{
                         mainActivity_.wifi_button.text="WIFI OFF"
                         mainActivity_.wifi_button.setBackgroundResource(R.color.red)
+                        mainActivity_.discover_status.text= "NOT CONNECTED"
+                        mainActivity_.discover_status.setBackgroundResource(R.color.red)
 
                     }
 
@@ -61,7 +64,7 @@ class my_broadcast(var manager: WifiP2pManager, var channel:WifiP2pManager.Chann
                             mainActivity_.updatePeers(it)
 
                         })
-                        Toast.makeText(context,"peer changed  ${peer.toString()}",Toast.LENGTH_SHORT).show()
+//                        Toast.makeText(context,"peer changed  ${peer.toString()}",Toast.LENGTH_SHORT).show()
 
 
 

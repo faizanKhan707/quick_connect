@@ -126,6 +126,15 @@
             android:layout_height="wrap_content"
             />
         <com.google.android.material.button.MaterialButton
+            android:layout_weight=".025"
+            android:id="@+id/attachment"
+            android:text="@"
+            android:textColor="@color/white"
+            android:backgroundTint="#651445"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            />
+        <com.google.android.material.button.MaterialButton
             android:layout_weight=".075"
             android:text="SEND"
             android:id="@+id/send"

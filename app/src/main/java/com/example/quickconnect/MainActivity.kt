@@ -6,18 +6,20 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.net.wifi.WifiManager
 import android.net.wifi.p2p.WifiP2pConfig
 import android.net.wifi.p2p.WifiP2pDevice
 import android.net.wifi.p2p.WifiP2pDeviceList
 import android.net.wifi.p2p.WifiP2pInfo
-import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
 import android.net.wifi.p2p.WifiP2pManager
+import android.os.Build
+import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
@@ -25,6 +27,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -58,6 +61,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var permissionLauncher: ActivityResultLauncher<Array<String  >>
     private var isLocationPermissionGranted=false
     private var isCoarsePermissionGranted=false
+    private var isStoragePermissionGranted=false
+
     private lateinit var rcv_peer:RecyclerView
     lateinit var discover:Button
     lateinit var discover_status:TextView
@@ -66,15 +71,24 @@ class MainActivity : AppCompatActivity() {
     lateinit var rcv_msg:RecyclerView
     private lateinit var sendButton:Button
     lateinit var msg_text:EditText
+    var connectedToDevice:Boolean=false
+    var connectedDeviceName:String?=null
 
 
+
+    lateinit var attachment:Button
 
     lateinit var socket:Socket
     lateinit var serverClass: ServerClass
     lateinit var clientClass: ClientClass
     var isHost:Boolean=false
 
-    private fun requestPermission(){
+
+
+
+
+
+        private fun requestPermission(){
         isLocationPermissionGranted=ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED
 
         val permissionRequest:MutableList<String> =ArrayList()
@@ -85,17 +99,25 @@ class MainActivity : AppCompatActivity() {
         if(!isCoarsePermissionGranted)
             permissionRequest.add(Manifest.permission.ACCESS_COARSE_LOCATION)
 
+        if(!isStoragePermissionGranted)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                permissionRequest.add(Manifest.permission.READ_MEDIA_IMAGES)
+            }
+
         if(permissionRequest.isNotEmpty()){
             permissionLauncher.launch(permissionRequest.toTypedArray())
         }
 
+        Log.d("Request permission", "${permissionRequest.toString()}")
+
     }
 
 
-
-
-
-
+    override fun onStart() {
+        super.onStart()
+        requestPermission()
+        
+    }
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -111,14 +133,14 @@ class MainActivity : AppCompatActivity() {
         msg_List= mutableListOf()
         sendButton=findViewById(R.id.send)
         msg_text=findViewById(R.id.msg_text)
-
+        attachment=findViewById(R.id.attachment)
 
 
         permissionLauncher=registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()){
             permission ->
             isLocationPermissionGranted=permission[Manifest.permission.ACCESS_FINE_LOCATION]?:isLocationPermissionGranted
             isCoarsePermissionGranted=permission[Manifest.permission.ACCESS_COARSE_LOCATION]?:isCoarsePermissionGranted
-
+            isStoragePermissionGranted=permission[Manifest.permission.READ_MEDIA_IMAGES]?:isStoragePermissionGranted
         }
         requestPermission()
 
@@ -131,12 +153,11 @@ class MainActivity : AppCompatActivity() {
         rcv_msg.setHasFixedSize(true)
 
 
-        Toast.makeText(this,"${isCoarsePermissionGranted} ${isLocationPermissionGranted}",Toast.LENGTH_LONG).show()
         val wifi=applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
-        if(wifi.isWifiEnabled){
-            wifi_button.text= getString(R.string.wifi_on)
-            wifi_button.setBackgroundResource(R.color.green)
-        }
+//        if(wifi.isWifiEnabled){
+//            wifi_button.text= getString(R.string.wifi_on)
+//            wifi_button.setBackgroundResource(R.color.green)
+//        }
 
         wifi_button.setOnClickListener(){
             startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
@@ -165,8 +186,6 @@ class MainActivity : AppCompatActivity() {
 
 
         discover.setOnClickListener{
-            Toast.makeText(this,"Discover",Toast.LENGTH_LONG).show()
-
 
 
             if (ActivityCompat.checkSelfPermission(
@@ -189,9 +208,7 @@ class MainActivity : AppCompatActivity() {
             manager.discoverPeers(channel, object : WifiP2pManager.ActionListener {
                     override fun onSuccess() {
                         // Discovery succeeded!
-                        discover_status.text= getString(R.string.discovey_started)
-                        discover_status.setBackgroundResource(R.color.green)
-                        Toast.makeText(applicationContext,"Discover success",Toast.LENGTH_SHORT).show()
+                        Toast.makeText(applicationContext,"Discover successfully Started",Toast.LENGTH_SHORT).show()
 
                     }
 
@@ -208,26 +225,37 @@ class MainActivity : AppCompatActivity() {
 
         sendButton.setOnClickListener(object : View.OnClickListener{
             override fun onClick(p0: View?) {
-                val executor:ExecutorService=Executors.newSingleThreadExecutor()
-                val msg:String=msg_text.text.toString()
-                executor.execute(object : Runnable{
-                    override fun run() {
-                        if(isHost){
-                            msg_List.add("Host -> $msg")
-                            serverClass.write(msg.toByteArray())
-                        }
-                        else{
-                            msg_List.add("Client -> $msg")
-                            clientClass.write(msg.toByteArray())
+                if(connectedToDevice==false){
+                    Toast.makeText(applicationContext, "No Device Connected", Toast.LENGTH_SHORT).show()
+                }
+                else{
+                    val executor: ExecutorService = Executors.newSingleThreadExecutor()
+                    val msg: String = msg_text.text.toString()
+                    if (msg.length == 0) {
+                        Toast.makeText(applicationContext, "Please Enter a valid Text", Toast.LENGTH_SHORT).show()
+                    } else {
+                        executor.execute(object : Runnable {
+                            override fun run() {
+                                if (isHost) {
+                                    serverClass.write(msg.toByteArray())
+                                } else {
+                                    clientClass.write(msg.toByteArray())
 
+                                }
 
-
-                        }
-
+                            }
+                        })
                     }
-                })
+                }
             }
 
+        })
+
+
+        attachment.setOnClickListener(object : View.OnClickListener{
+            override fun onClick(p0: View?) {
+                contract.launch(("image/*"))
+            }
         })
 
 
@@ -235,73 +263,129 @@ class MainActivity : AppCompatActivity() {
     }
 
 
+    val contract= registerForActivityResult(ActivityResultContracts.GetContent()){
+        val executor:ExecutorService=Executors.newSingleThreadExecutor()
+        val msg:String=msg_text.text.toString()
+        executor.execute(object : Runnable{
+            override fun run() {
+                if(isHost){
 
-    fun updatePeers(wifiP2pDeviceList: WifiP2pDeviceList){
-        Toast.makeText(this, "${wifiP2pDeviceList.deviceList.size}  ${wifiP2pDeviceList.deviceList.toString()}", Toast.LENGTH_SHORT).show()
-        if (wifiP2pDeviceList != peers){
-            val k= mutableListOf<WifiP2pDevice>()
-            for( i in wifiP2pDeviceList.deviceList){
-                k.add(i)
-            }
-
-            peers=k
-            rcv_peer=findViewById(R.id.rcv_peers)
-            val adapter=myAdapter_peers(peers)
-            rcv_peer.adapter=adapter
-            rcv_peer.layoutManager=LinearLayoutManager(this)
-            rcv_peer.setHasFixedSize(true)
-            val discover_status=findViewById<TextView>(R.id.discover_status)
-            adapter.setOnItemClickListner(object : myAdapter_peers.onItemClickListner{
-                override fun onItemClick(position: Int) {
-                    Toast.makeText(applicationContext, "$position clicked", Toast.LENGTH_SHORT).show()
-                    val wifiDevice:WifiP2pDevice=peers[position]
-                    val config = WifiP2pConfig()
-                    config.deviceAddress=wifiDevice.deviceAddress
-
-
-                    if (ActivityCompat.checkSelfPermission(
-                            applicationContext,
-                            Manifest.permission.ACCESS_FINE_LOCATION
-                        ) != PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(
-                            applicationContext,
-                            Manifest.permission.NEARBY_WIFI_DEVICES
-                        ) != PackageManager.PERMISSION_GRANTED
-                    ) {
-                        requestPermission()
-                        // here to request the missing permissions, and then overriding
-                        //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                        //                                          int[] grantResults)
-                        // to handle the case where the user grants the permission. See the documentation
-                        // for ActivityCompat#requestPermissions for more details.
-
-                    }
-
-
-                    manager.connect(channel,config,object:WifiP2pManager.ActionListener{
-
-                        @SuppressLint("SetTextI18n")
-                        override fun onSuccess() {
-                            discover_status.text="Connected to ${wifiDevice.deviceName.toString().subSequence(0,
-                                kotlin.math.min(wifiDevice.deviceName.toString().length - 1, 5)
-                            )}"
-
-                        }
-
-                        override fun onFailure(p0: Int) {
-                            discover_status.text= getString(R.string.not_connected)
-                            discover_status.setBackgroundResource(R.color.red)
-                        }
-
-                    })
-
-
+                }
+                else{
 
                 }
 
-            })
+            }
+        })
+    }
 
 
 
+            fun updatePeers(wifiP2pDeviceList: WifiP2pDeviceList){
+                if(wifiP2pDeviceList != peers){
+                    val k= mutableListOf<WifiP2pDevice>()
+                    if(connectedToDevice){
+                        if(connectedDeviceName==null)
+                            connectedToDevice=false
+                        else{
+                            var f=false
+                            for(i in wifiP2pDeviceList.deviceList)
+                            {
+                                if(i.deviceName.toString()==connectedDeviceName)
+                                {
+                                    f=true
+                                    break
+                                }
+                            }
+                            if(f==false){
+
+                                Toast.makeText(applicationContext, "Device Disconnected From other side", Toast.LENGTH_SHORT).show()
+                                manager.removeGroup(
+                                    channel,
+                                    object : WifiP2pManager.ActionListener {
+                                        override fun onSuccess() {
+                                            Toast.makeText(applicationContext, "Device ${connectedDeviceName.toString()} Disconnected", Toast.LENGTH_SHORT).show()
+                                            connectedToDevice=false
+                                            connectedDeviceName=null
+                                            if (isHost) {
+                                                serverClass.write("buggggg".toByteArray())
+                                            } else {
+                                                clientClass.write("buggggg".toByteArray())
+                                            }
+                                            socket.close()
+                                            discover_status.text= getString(R.string.not_connected)
+                                            discover_status.setBackgroundResource(R.color.red)
+                                            // The device was successfully disconnected from the group.
+                                        }
+
+                                        override fun onFailure(reason: Int) {
+                                            // An error occurred while disconnecting the device from the group.
+                                        }
+                                    })
+                                connectedDeviceName=null
+                                connectedToDevice=false
+                            }
+                        }
+
+                    }
+                    for( i in wifiP2pDeviceList.deviceList){
+                        k.add(i)
+                    }
+
+                    peers=k
+                    rcv_peer=findViewById(R.id.rcv_peers)
+                    val adapter=myAdapter_peers(peers)
+                    rcv_peer.adapter=adapter
+                    rcv_peer.layoutManager=LinearLayoutManager(this)
+                    rcv_peer.setHasFixedSize(true)
+                    val discover_status=findViewById<TextView>(R.id.discover_status)
+                    adapter.setOnItemClickListner(object : myAdapter_peers.onItemClickListner{
+                        override fun onItemClick(position: Int) {
+                            Toast.makeText(applicationContext, "$position clicked", Toast.LENGTH_SHORT).show()
+                            val wifiDevice:WifiP2pDevice=peers[position]
+                            val config = WifiP2pConfig()
+                            config.deviceAddress=wifiDevice.deviceAddress
+
+
+                            if (ActivityCompat.checkSelfPermission(
+                                    applicationContext,
+                                    Manifest.permission.ACCESS_FINE_LOCATION
+                                ) != PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(
+                                    applicationContext,
+                                    Manifest.permission.NEARBY_WIFI_DEVICES
+                                ) != PackageManager.PERMISSION_GRANTED
+                            ) {
+                                requestPermission()
+                                // here to request the missing permissions, and then overriding
+                                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                                //                                          int[] grantResults)
+                                // to handle the case where the user grants the permission. See the documentation
+                                // for ActivityCompat#requestPermissions for more details.
+
+                            }
+
+
+                            manager.connect(channel,config,object:WifiP2pManager.ActionListener{
+
+                                @SuppressLint("SetTextI18n")
+                                override fun onSuccess() {
+                                    discover_status.text="Connected to ${wifiDevice.deviceName.toString().subSequence(0,
+                                        kotlin.math.min(wifiDevice.deviceName.toString().length - 1, 5)
+                                    )}"
+                                    connectedToDevice=true
+                                    connectedDeviceName=wifiDevice.deviceName.toString()
+                                }
+
+                                override fun onFailure(p0: Int) {
+                                    discover_status.text= getString(R.string.not_connected)
+                                    discover_status.setBackgroundResource(R.color.red)
+                                }
+
+                            })
+
+                        }
+
+                    })
         }
     }
     var connectionInfoListener:WifiP2pManager.ConnectionInfoListener= object : WifiP2pManager.ConnectionInfoListener{
@@ -313,12 +397,16 @@ class MainActivity : AppCompatActivity() {
                 {
                     if (p0.groupFormed == true && p0.isGroupOwner) {
                         isHost = true
+                        connectedToDevice=true
                         discover_status.text = getString(R.string.host)
+                        discover_status.setBackgroundResource(R.color.green)
                         serverClass = ServerClass()
                         serverClass.start()
                     } else if (p0.groupFormed == true) {
                         discover_status.text = getString(R.string.client)
+                        discover_status.setBackgroundResource(R.color.green)
                         isHost = false
+                        connectedToDevice=true
                         clientClass = ClientClass(groupOwnerAddress)
                         clientClass.start()
                     }
@@ -367,7 +455,7 @@ class MainActivity : AppCompatActivity() {
                 outputStream=socket.getOutputStream()
 
             }catch (e:IOException){
-                Toast.makeText(this@MainActivity, "${e.printStackTrace()}", Toast.LENGTH_LONG).show()
+                Log.d("error", "run: ${e.printStackTrace()}")
             }
 
             val executor:ExecutorService=Executors.newSingleThreadExecutor()
@@ -383,11 +471,33 @@ class MainActivity : AppCompatActivity() {
                                 val finalByte=byte
                                 handler.post(object : Runnable {
                                     override fun run() {
-                                        msg_List.add(String(buffer,0,finalByte))
-                                        rcv_msg.adapter=myAdapter_msg(msg_List)
-                                        rcv_msg.layoutManager=LinearLayoutManager(this@MainActivity)
-                                        rcv_msg.setHasFixedSize(true)
+                                        val temp=String(buffer,0,finalByte)
+                                        if(temp=="buggggg"){
 
+                                            manager.removeGroup(
+                                                channel,
+                                                object : WifiP2pManager.ActionListener {
+                                                    override fun onSuccess() {
+                                                        Toast.makeText(applicationContext, "Device Disconnected", Toast.LENGTH_SHORT).show()
+                                                        connectedToDevice=false
+                                                        connectedDeviceName=null
+                                                        discover_status.text= getString(R.string.not_connected)
+                                                        discover_status.setBackgroundResource(R.color.red)
+                                                        socket.close()
+                                                        // The device was successfully disconnected from the group.
+                                                    }
+
+                                                    override fun onFailure(reason: Int) {
+                                                        // An error occurred while disconnecting the device from the group.
+                                                    }
+                                                })
+                                        }
+                                        else{
+                                            msg_List.add(String(buffer,0,finalByte))
+                                            rcv_msg.adapter=myAdapter_msg(msg_List)
+                                            rcv_msg.layoutManager=LinearLayoutManager(this@MainActivity)
+                                            rcv_msg.setHasFixedSize(true)
+                                        }
                                     }
 
                                 })
@@ -444,10 +554,30 @@ class MainActivity : AppCompatActivity() {
                                 val finalByte=byte
                                 handler.post(object : Runnable {
                                     override fun run() {
-                                        msg_List.add(String(buffer,0,finalByte))
-                                        rcv_msg.adapter=myAdapter_msg(msg_List)
-                                        rcv_msg.layoutManager=LinearLayoutManager(this@MainActivity)
-                                        rcv_msg.setHasFixedSize(true)
+                                        val temp=String(buffer,0,finalByte)
+                                        if(temp=="buggggg"){
+                                            manager.removeGroup(
+                                                channel,
+                                                object : WifiP2pManager.ActionListener {
+                                                    override fun onSuccess() {
+                                                        Toast.makeText(applicationContext, "Device Disconnected", Toast.LENGTH_SHORT).show()
+                                                        connectedToDevice=false
+                                                        connectedDeviceName=null
+                                                        discover_status.text= getString(R.string.not_connected)
+                                                        discover_status.setBackgroundResource(R.color.red)
+                                                        socket.close()
+                                                    }
+
+                                                    override fun onFailure(reason: Int) {
+                                                    }
+                                                })
+                                        }
+                                        else{
+                                            msg_List.add(String(buffer,0,finalByte))
+                                            rcv_msg.adapter=myAdapter_msg(msg_List)
+                                            rcv_msg.layoutManager=LinearLayoutManager(this@MainActivity)
+                                            rcv_msg.setHasFixedSize(true)
+                                        }
 
                                     }
 
